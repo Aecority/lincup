@@ -3,9 +3,7 @@ import pygame
 
 lines = list()
 
-scale = 10
-
-def render(screen):
+def render(screen, scale):
     turned = False
     width, height = screen.get_size()
     for i in range(scale):

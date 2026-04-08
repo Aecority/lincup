@@ -20,7 +20,7 @@ while running:
     deltaTime = clock.tick(60)
     screen.fill(backgroundColor)
     
-    rendering.render(screen)
+    rendering.render(screen, 10)
     
     pygame.display.flip()
     
