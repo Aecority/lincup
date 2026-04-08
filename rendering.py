@@ -1,16 +1,50 @@
-# pygame.draw.line(surface, color, start_pos, end_pos, width=1)
 import pygame
+import math
 
-lines = list()
+backgroundColor = pygame.Color("#bebebe")
 
-def render(screen, scale):
-    turned = False
-    width, height = screen.get_size()
-    for i in range(scale):
-        for j in range(1, scale):
-            if turned:
-                pygame.draw.line(screen, "black", ((width/scale)*j, 0), ((width/scale)*j, 1000), width=1)
-            else:
-                pygame.draw.line(screen, "black", (0, (height/scale)*j), (1000, (height/scale)*j), width=1)
-        if i > 2:
-            turned = True
+class renderer:
+    def __init__(self, screen: pygame.Surface):
+        self.screen = screen
+        
+        # Camera
+        self.camOffset: pygame.Vector2 = pygame.Vector2(0, 0)
+        self.camZoom: int = 30
+        
+        self.render()
+        
+    def render(self):
+        width, height = self.screen.get_size()
+        self.screen.fill(backgroundColor)
+        
+        horizontalCount = math.ceil(width/self.camZoom)+2
+        verticalCount = math.ceil(height/self.camZoom)+2
+        
+        localOffset = pygame.Vector2(
+            self.camOffset.x % self.camZoom - self.camZoom*1.5,
+            self.camOffset.y % self.camZoom - self.camZoom*1.5,
+        )
+        
+        for x in range(horizontalCount):
+            pygame.draw.line(self.screen,
+                            "black",
+                            pygame.Vector2(self.camZoom*x, 0)+localOffset,
+                            pygame.Vector2(self.camZoom*x, verticalCount*self.camZoom)+localOffset,
+                            width=1)
+
+        for y in range(verticalCount):
+            pygame.draw.line(self.screen,
+                            "black",
+                            pygame.Vector2(0, self.camZoom*y)+localOffset,
+                            pygame.Vector2(self.camZoom*horizontalCount, self.camZoom*y)+localOffset,
+                            width=1)
+        
+    def MoveCamera(self, pos: pygame.Vector2):
+        self.camOffset = pos
+        self.render()
+
+    def WorldToScreenPoint(self, pos: pygame.Vector2):
+        return pos + self.camOffset
+
+    def ScreenToWorldPoint(self, pos: pygame.Vector2):
+        return pos - self.camOffset
