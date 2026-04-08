@@ -1,7 +1,7 @@
 import pygame
 import math
 
-backgroundColor = pygame.Color("#bebebe")
+backgroundColor = pygame.Color("#f4c2c2")
 
 class renderer:
     def __init__(self, screen: pygame.Surface):
