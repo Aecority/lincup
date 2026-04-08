@@ -14,6 +14,7 @@ clock = pygame.time.Clock()
 renderer = rendering.renderer(screen)
 
 camSpeed = 0.2
+scrollFactor = 0.05
 inputDirection = pygame.Vector2(0, 0)
 
 # Main app loop
@@ -24,7 +25,12 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         inputDirection = input.ReadDirection(event)
+        scrollStatus = input.ReadScroll(event)
     
+    if scrollStatus:
+        renderer.ZoomCamera(scrollStatus * scrollFactor * deltaTime)
+        
+    scrollStatus = None
     renderer.MoveCamera(renderer.camOffset + (inputDirection * camSpeed * deltaTime))
     
     pygame.display.flip()

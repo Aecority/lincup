@@ -23,3 +23,12 @@ def ReadDirection(event):
             direction.x = 0
     
     return direction
+
+def ReadScroll(event):
+    if event.type == pygame.MOUSEWHEEL:
+        if event.y > 0:
+            return 1
+        elif event.y < 0:
+            return -1
+        else:
+            return 0

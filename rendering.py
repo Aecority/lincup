@@ -2,6 +2,7 @@ import pygame
 import math
 
 backgroundColor = pygame.Color("#f4c2c2")
+minZoom, maxZoom = 15, 40
 
 class renderer:
     def __init__(self, screen: pygame.Surface):
@@ -9,7 +10,7 @@ class renderer:
         
         # Camera
         self.camOffset: pygame.Vector2 = pygame.Vector2(0, 0)
-        self.camZoom: int = 30
+        self.camZoom: float = 30
         
         self.render()
         
@@ -24,6 +25,9 @@ class renderer:
             self.camOffset.x % self.camZoom - self.camZoom*1.5,
             self.camOffset.y % self.camZoom - self.camZoom*1.5,
         )
+        
+        origin = pygame.Vector2(0, 0)
+        pygame.draw.circle(self.screen, "black", self.WorldToScreenPoint(origin), 0.2*self.camZoom)
         
         for x in range(horizontalCount):
             pygame.draw.line(self.screen,
@@ -41,6 +45,17 @@ class renderer:
         
     def MoveCamera(self, pos: pygame.Vector2):
         self.camOffset = pos
+        self.render()
+        
+    def ZoomCamera(self, dir: float):
+        zoomLevel = self.camZoom + dir
+        print(zoomLevel)
+        if zoomLevel > maxZoom:
+            zoomLevel = maxZoom
+        elif zoomLevel < minZoom:
+            zoomLevel = minZoom
+        
+        self.camZoom = zoomLevel
         self.render()
 
     def WorldToScreenPoint(self, pos: pygame.Vector2):
