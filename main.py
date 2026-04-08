@@ -1,4 +1,5 @@
 import pygame
+import rendering
 
 windowDimensions = (1280, 720)
 backgroundColor = pygame.Color("#bebebe")
@@ -19,7 +20,7 @@ while running:
     deltaTime = clock.tick(60)
     screen.fill(backgroundColor)
     
-    # Render here
+    rendering.render(screen)
     
     pygame.display.flip()
     
