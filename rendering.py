@@ -1,33 +1,70 @@
 import pygame
 import math
+from nodes import Grid
 
 backgroundColor = pygame.Color("#f4c2c2")
-minZoom, maxZoom = 15, 40
+minZoom, maxZoom = 5, 40
+bgRenderThreshold: int = 10
 
 class renderer:
     def __init__(self, screen: pygame.Surface):
         self.screen = screen
         
-        # Camera
+        # Camera (do NOT directly change either of these values and use the respective functions instead)
         self.camOffset: pygame.Vector2 = pygame.Vector2(0, 0)
         self.camZoom: float = 30
         
-        self.render()
+        self.grid: Grid
+        self.__gridSet: bool = False
         
-    def render(self):
-        width, height = self.screen.get_size()
+        self.Render()
+        
+    def Render(self):
         self.screen.fill(backgroundColor)
+        if self.camZoom > bgRenderThreshold: self.__RenderBackground()
         
+        if self.__gridSet: self.__RenderGrid()
+        
+    def MoveCamera(self, pos: pygame.Vector2):
+        self.camOffset = pos
+        self.Render()
+        
+    def ZoomCamera(self, dir: float):
+        zoomLevel = self.camZoom + dir
+        print(zoomLevel)
+        if zoomLevel > maxZoom:
+            zoomLevel = maxZoom
+        elif zoomLevel < minZoom:
+            zoomLevel = minZoom
+        
+        self.camZoom = zoomLevel
+        self.Render()
+
+    def WorldToScreenPoint(self, pos: pygame.Vector2):
+        return pos + self.camOffset
+
+    def ScreenToWorldPoint(self, pos: pygame.Vector2): # Unused currently, remove if unused after project completion
+        return pos - self.camOffset
+    
+    def SetGrid(self, width, height):
+        self.grid = Grid(width, height)
+        self.__gridSet = True
+        
+    def __RenderGrid(self):
+        for i in range(self.grid.height):
+            for j in range(self.grid.width):
+                rect = pygame.Rect(j*self.camZoom+self.camOffset.x, i*self.camZoom+self.camOffset.y, self.camZoom, self.camZoom)
+                pygame.draw.rect(self.screen, "green", rect)
+    
+    def __RenderBackground(self):
+        width, height = self.screen.get_size()
         horizontalCount = math.ceil(width/self.camZoom)+2
         verticalCount = math.ceil(height/self.camZoom)+2
         
         localOffset = pygame.Vector2(
-            self.camOffset.x % self.camZoom - self.camZoom*1.5,
-            self.camOffset.y % self.camZoom - self.camZoom*1.5,
+            self.camOffset.x % self.camZoom - self.camZoom,
+            self.camOffset.y % self.camZoom - self.camZoom,
         )
-        
-        origin = pygame.Vector2(0, 0)
-        pygame.draw.circle(self.screen, "black", self.WorldToScreenPoint(origin), 0.2*self.camZoom)
         
         for x in range(horizontalCount):
             pygame.draw.line(self.screen,
@@ -42,24 +79,3 @@ class renderer:
                             pygame.Vector2(0, self.camZoom*y)+localOffset,
                             pygame.Vector2(self.camZoom*horizontalCount, self.camZoom*y)+localOffset,
                             width=1)
-        
-    def MoveCamera(self, pos: pygame.Vector2):
-        self.camOffset = pos
-        self.render()
-        
-    def ZoomCamera(self, dir: float):
-        zoomLevel = self.camZoom + dir
-        print(zoomLevel)
-        if zoomLevel > maxZoom:
-            zoomLevel = maxZoom
-        elif zoomLevel < minZoom:
-            zoomLevel = minZoom
-        
-        self.camZoom = zoomLevel
-        self.render()
-
-    def WorldToScreenPoint(self, pos: pygame.Vector2):
-        return pos + self.camOffset
-
-    def ScreenToWorldPoint(self, pos: pygame.Vector2):
-        return pos - self.camOffset
