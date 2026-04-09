@@ -18,7 +18,10 @@ class Grid():
         self.width = width
         self.height = height
         
-        self.nodes: list[Node] = [Node(nodeType=NodeType.EMPTY, position=pygame.Vector2(0, 0)) for i in range(width*height)]
-    
+        self.nodes: list[Node] = [
+            Node(nodeType=NodeType.EMPTY, position=pygame.Vector2(x, y))
+            for y in range(height) for x in range(width)
+        ]
+        
     def GetNode(self, horizontal, vertical):
         return self.nodes[vertical * self.width + horizontal]

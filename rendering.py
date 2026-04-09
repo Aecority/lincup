@@ -6,6 +6,9 @@ backgroundColor = pygame.Color("#f4c2c2")
 minZoom, maxZoom = 5, 40
 bgRenderThreshold: int = 10
 
+# Node colors
+emptyNodeCol = pygame.Color("#868686")
+
 class renderer:
     def __init__(self, screen: pygame.Surface):
         self.screen = screen
@@ -23,7 +26,8 @@ class renderer:
         self.screen.fill(backgroundColor)
         if self.camZoom > bgRenderThreshold: self.__RenderBackground()
         
-        if self.__gridSet: self.__RenderGrid()
+        if self.__gridSet:
+            pass
         
     def MoveCamera(self, pos: pygame.Vector2):
         self.camOffset = pos
@@ -48,13 +52,15 @@ class renderer:
     
     def SetGrid(self, width, height):
         self.grid = Grid(width, height)
+        self.__RenderGrid()
         self.__gridSet = True
         
     def __RenderGrid(self):
+        # Replace this with only rendering visible tiles later
+        self.gridSurface = pygame.Surface((self.grid.width, self.grid.height))
         for i in range(self.grid.height):
             for j in range(self.grid.width):
-                rect = pygame.Rect(j*self.camZoom+self.camOffset.x, i*self.camZoom+self.camOffset.y, self.camZoom, self.camZoom)
-                pygame.draw.rect(self.screen, "green", rect)
+                self.gridSurface.set_at((j, i), emptyNodeCol)
     
     def __RenderBackground(self):
         width, height = self.screen.get_size()
