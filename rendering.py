@@ -1,17 +1,22 @@
 import pygame
 import math
-from nodes import Grid
+from nodes import Grid, NodeType
 
 backgroundColor = pygame.Color("#f4c2c2")
 minZoom, maxZoom = 5, 40
 bgRenderThreshold: int = 10
 
 # Node colors
-emptyNodeCol = pygame.Color("#868686")
+emptyNodeCol = pygame.Color("#CFCFCF")
+dirtNodeCol = pygame.Color("#724419")
+pavementNodeCol = pygame.Color("#A19E8E")
+roadNodeCol = pygame.Color("#1D1F27")
 
 class renderer:
     def __init__(self, screen: pygame.Surface):
         self.screen = screen
+        
+        self.enableBgRendering: bool = True
         
         # Camera (do NOT directly change either of these values and use the respective functions instead)
         self.camOffset: pygame.Vector2 = pygame.Vector2(0, 0)
@@ -24,10 +29,11 @@ class renderer:
         
     def Render(self):
         self.screen.fill(backgroundColor)
-        if self.camZoom > bgRenderThreshold: self.__RenderBackground()
-        
         if self.__gridSet:
             self.__RenderGrid()
+        
+        if self.camZoom > bgRenderThreshold and self.enableBgRendering:
+            self.__RenderBackground()
         
     def MoveCamera(self, pos: pygame.Vector2):
         self.camOffset = pos
@@ -42,17 +48,16 @@ class renderer:
         
         self.camZoom = zoomLevel
         self.Render()
-
-    def WorldToScreenPoint(self, pos: tuple[int, int]):
-        return pos + self.camOffset
-
-    def ScreenToWorldPoint(self, pos: tuple[int, int]): # Unused currently, remove if unused after project completion
-        return pos - self.camOffset
     
     def SetGrid(self, width, height):
         self.grid = Grid(width, height)
         self.__gridSet = True
         
+    def NodePosFromMouse(self):
+        mouseX, mouseY = pygame.mouse.get_pos()
+        nodePos = ((mouseX-self.camOffset.x)//self.camZoom), ((mouseY-self.camOffset.y)//self.camZoom)
+        return nodePos
+    
     def __RenderGrid(self):
         # Replace this with only rendering visible tiles later
         sWidth, sHeight = self.screen.get_size()
@@ -65,16 +70,17 @@ class renderer:
                 if (x,y) not in self.grid.nodes:
                     continue
                 rect = pygame.Rect(x*self.camZoom + self.camOffset.x, y*self.camZoom + self.camOffset.y, self.camZoom, self.camZoom)
-                nodeCol = emptyNodeCol
+                match self.grid.nodes.get((x, y)):
+                    case NodeType.EMPTY:
+                        nodeCol = emptyNodeCol
+                    case NodeType.DIRT:
+                        nodeCol = dirtNodeCol
+                    case NodeType.PAVEMENT:
+                        nodeCol = pavementNodeCol
+                    case NodeType.ROAD:
+                        nodeCol = roadNodeCol
+                
                 pygame.draw.rect(self.screen, nodeCol, rect)
-
-        # for (xPos, yPos), nodetype in self.grid.nodes.items():
-        #     xScreenPos, yScreenPos = xPos*self.camZoom+self.camOffset.x, yPos*self.camZoom+self.camOffset.y
-        #     rect = pygame.Rect(xScreenPos, yScreenPos, self.camZoom, self.camZoom)
-            
-        #     nodeCol = emptyNodeCol
-
-        #     pygame.draw.rect(self.screen, nodeCol, rect)
     
     def __RenderBackground(self):
         width, height = self.screen.get_size()

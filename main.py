@@ -23,24 +23,37 @@ inputDirection = pygame.Vector2(0, 0)
 
 # GUI elements
 panel = pygame_gui.elements.UIPanel(
-    relative_rect=pygame.Rect(0, 0, 220, (screen.get_size()[1])),
+    relative_rect=pygame.Rect(0, 0, 220, 500),
+    manager=guimanager
+)
+
+boundHeading = pygame_gui.elements.UILabel(
+    relative_rect=pygame.Rect(10, 20, 200, 30),
+    text='Create Bounds',
     manager=guimanager
 )
 
 widthInput = pygame_gui.elements.UITextEntryLine(
-    relative_rect=pygame.Rect(10, 10, 200, 30),
+    relative_rect=pygame.Rect(10, 50, 200, 30),
     placeholder_text="width...",
     manager=guimanager
 )
 
 heightInput = pygame_gui.elements.UITextEntryLine(
-    relative_rect=pygame.Rect(10, 50, 200, 30),
+    relative_rect=pygame.Rect(10, 90, 200, 30),
     placeholder_text="height...",
     manager=guimanager
 )
 
+enableGridRendering = pygame_gui.elements.UICheckBox(
+    relative_rect=pygame.Rect(10, 420, 30, 30),
+    text="Enable Grid Rendering",
+    manager=guimanager
+)
+enableGridRendering.set_state(True)
+
 submitButton = pygame_gui.elements.UIButton(
-    relative_rect=pygame.Rect(10, 90, 200, 30),
+    relative_rect=pygame.Rect(10, 450, 200, 30),
     text="Apply",
     manager=guimanager
 )
@@ -55,6 +68,14 @@ while running:
         guimanager.process_events(event)
         inputDirection = input.ReadDirection(event)
         scrollStatus = input.ReadScroll(event)
+        
+        if event.type == pygame_gui.UI_CHECK_BOX_CHECKED:
+            if event.ui_element == enableGridRendering:
+                renderer.enableBgRendering = True
+        if event.type == pygame_gui.UI_CHECK_BOX_UNCHECKED:
+            if event.ui_element == enableGridRendering:
+                renderer.enableBgRendering = False
+                    
         if event.type == pygame_gui.UI_BUTTON_PRESSED:
             if event.ui_element == submitButton:
                 width, height = int(widthInput.get_text()), int(heightInput.get_text())
