@@ -57,11 +57,12 @@ while running:
         scrollStatus = input.ReadScroll(event)
         if event.type == pygame_gui.UI_BUTTON_PRESSED:
             if event.ui_element == submitButton:
+                width, height = int(widthInput.get_text()), int(heightInput.get_text())
                 try:
-                    width, height = int(widthInput.get_text()), int(heightInput.get_text())
                     renderer.SetGrid(width, height)
-                except:
-                    print("bro.")
+                    print(width, height)
+                except ValueError:
+                    print("Invalid Input")
     
     if scrollStatus:
         renderer.ZoomCamera(scrollStatus * scrollFactor * deltaTime)
