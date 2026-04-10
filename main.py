@@ -60,7 +60,6 @@ while running:
                 width, height = int(widthInput.get_text()), int(heightInput.get_text())
                 try:
                     renderer.SetGrid(width, height)
-                    print(width, height)
                 except ValueError:
                     print("Invalid Input")
     

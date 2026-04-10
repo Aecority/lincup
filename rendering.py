@@ -43,23 +43,38 @@ class renderer:
         self.camZoom = zoomLevel
         self.Render()
 
-    def WorldToScreenPoint(self, pos: pygame.Vector2):
+    def WorldToScreenPoint(self, pos: tuple[int, int]):
         return pos + self.camOffset
 
-    def ScreenToWorldPoint(self, pos: pygame.Vector2): # Unused currently, remove if unused after project completion
+    def ScreenToWorldPoint(self, pos: tuple[int, int]): # Unused currently, remove if unused after project completion
         return pos - self.camOffset
     
     def SetGrid(self, width, height):
         self.grid = Grid(width, height)
-        self.__RenderGrid()
         self.__gridSet = True
         
     def __RenderGrid(self):
         # Replace this with only rendering visible tiles later
-        for (xPos, yPos), type in self.grid.nodes.items():
-            xScreenPos, yScreenPos = xPos*self.camZoom+self.camOffset.x, yPos*self.camZoom+self.camOffset.y
-            rect = pygame.Rect(xScreenPos, yScreenPos, self.camZoom, self.camZoom)
-            pygame.draw.rect(self.screen, emptyNodeCol, rect)
+        sWidth, sHeight = self.screen.get_size()
+        
+        startX, startY = int(-self.camOffset.x // self.camZoom), int(-self.camOffset.y // self.camZoom)
+        endX, endY = startX+math.ceil(sWidth / self.camZoom)+2, startY+math.ceil(sHeight / self.camZoom)+2
+
+        for x in range(startX, endX):
+            for y in range(startY, endY):
+                if (x,y) not in self.grid.nodes:
+                    continue
+                rect = pygame.Rect(x*self.camZoom + self.camOffset.x, y*self.camZoom + self.camOffset.y, self.camZoom, self.camZoom)
+                nodeCol = emptyNodeCol
+                pygame.draw.rect(self.screen, nodeCol, rect)
+
+        # for (xPos, yPos), nodetype in self.grid.nodes.items():
+        #     xScreenPos, yScreenPos = xPos*self.camZoom+self.camOffset.x, yPos*self.camZoom+self.camOffset.y
+        #     rect = pygame.Rect(xScreenPos, yScreenPos, self.camZoom, self.camZoom)
+            
+        #     nodeCol = emptyNodeCol
+
+        #     pygame.draw.rect(self.screen, nodeCol, rect)
     
     def __RenderBackground(self):
         width, height = self.screen.get_size()
