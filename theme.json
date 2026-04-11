@@ -1,0 +1,16 @@
+{
+    "horizontal_slider": {
+        "misc": {
+            "shape": "rounded_rectangle",
+            "shape_corner_radius": "12",
+            "enable_arrow_buttons": "0",
+            "sliding_button_width": "30"
+        }
+    },
+    "horizontal_slider.#sliding_button": {
+        "misc": {
+            "shape": "rounded_rectangle",
+            "shape_corner_radius": "10"
+        }
+    }
+}

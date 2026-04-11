@@ -15,9 +15,10 @@ screen = pygame.display.set_mode(windowDimensions, pygame.RESIZABLE)
 clock = pygame.time.Clock()
 
 # GUI
-guimanager = pygame_gui.UIManager(windowDimensions)
+guimanager = pygame_gui.UIManager(windowDimensions, "theme.json")
 typeList: List[str | Tuple[str, str]] = [t.name for t in NodeType]
 selectedType: NodeType = NodeType.EMPTY
+brushSize: int = 1
 
 renderer = rendering.renderer(screen)
 boundSet = False
@@ -27,6 +28,7 @@ scrollFactor = 0.05
 inputDirection = pygame.Vector2(0, 0)
 
 # GUI elements
+guiPanel = pygame.Rect(0, 0, 220, 500)
 panel = pygame_gui.elements.UIPanel(
     relative_rect=pygame.Rect(0, 0, 220, 500),
     manager=guimanager
@@ -62,8 +64,21 @@ brushHeading = pygame_gui.elements.UILabel(
     manager=guimanager
 )
 
+brushSizeBar = pygame_gui.elements.UIHorizontalSlider(
+    relative_rect=pygame.Rect(10, 200, 160, 30),
+    start_value=1,
+    value_range=(1, 10),
+    manager=guimanager
+)
+
+brushSizeDisplay = pygame_gui.elements.UILabel(
+    relative_rect=pygame.Rect(170, 200, 35, 30),
+    text='1',
+    manager=guimanager
+)
+
 nodeTypeDropdown = pygame_gui.elements.UIDropDownMenu(
-    relative_rect=pygame.Rect(10, 200, 200, 30),
+    relative_rect=pygame.Rect(10, 240, 200, 30),
     options_list=typeList,
     starting_option=typeList[0]
 )
@@ -101,6 +116,16 @@ while running:
                 
         if event.type == pygame_gui.UI_DROP_DOWN_MENU_CHANGED:
             selectedType = NodeType(typeList.index(event.text))
+            
+        if event.type == pygame_gui.UI_HORIZONTAL_SLIDER_MOVED:
+            if event.ui_element == brushSizeBar:
+                brushSize = round(event.value)
+                brushSizeDisplay.set_text(str(brushSize))
+        
+        if event.type == pygame.MOUSEBUTTONUP:
+            snappedVal = round(brushSizeBar.get_current_value())
+            brushSizeBar.set_current_value(snappedVal)
+            brushSize = snappedVal
                     
         if event.type == pygame_gui.UI_BUTTON_PRESSED:
             if event.ui_element == applyBoundsButton:
@@ -111,13 +136,14 @@ while running:
                 except ValueError:
                     print("Invalid Input")
     
-    if pygame.mouse.get_pressed()[0]:
-        if boundSet:
-            renderer.Draw(selectedType, 2)
-    
-    if scrollStatus:
-        renderer.ZoomCamera(scrollStatus * scrollFactor * deltaTime)
-    renderer.MoveCamera(renderer.camOffset + (inputDirection * camSpeed * deltaTime))    
+    if not guiPanel.collidepoint(pygame.mouse.get_pos()):
+        if pygame.mouse.get_pressed()[0]:
+            if boundSet:
+                renderer.Draw(selectedType, brushSize)
+        
+        if scrollStatus:
+            renderer.ZoomCamera(scrollStatus * scrollFactor * deltaTime)
+        renderer.MoveCamera(renderer.camOffset + (inputDirection * camSpeed * deltaTime))    
     
     guimanager.update(deltaTime/1000)
     guimanager.draw_ui(screen)

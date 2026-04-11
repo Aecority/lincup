@@ -51,23 +51,45 @@ class renderer:
         
     def NodePosFromMouse(self):
         mouseX, mouseY = pygame.mouse.get_pos()
-        nodePos = ((mouseX-self.camOffset.x)//self.camZoom), ((mouseY-self.camOffset.y)//self.camZoom)
+        nodePos = int((mouseX-self.camOffset.x)//self.camZoom), int((mouseY-self.camOffset.y)//self.camZoom)
         return nodePos
     
     def Draw(self, selectedType: NodeType, size: int):
-        centrePos = self.NodePosFromMouse()
+        mouseX, mouseY = self.NodePosFromMouse()
         if size<1:
             return ValueError("Invalid brush size")
-        if size==1:
-            targetType = self.grid.nodes.get(centrePos, None)
-            if centrePos and targetType != None and targetType != selectedType:
-                self.grid.nodes[centrePos] = selectedType
-            return
-        drawNodes = self.grid.GetNeighbours(centrePos, size-1) | {centrePos}
-        for pos in drawNodes.copy():
-            targetType = self.grid.nodes.get(pos, None)
+        
+        nodes = self.grid.nodes
+        radius = size-1
+        
+        startX, endX = mouseX-radius, mouseX+radius
+        startY, endY = mouseY-radius, mouseY+radius
+        
+        if radius==0:
+            pos = (mouseX, mouseY)
+            targetType = nodes.get(pos, None)
             if pos and targetType != None and targetType != selectedType:
-                self.grid.nodes[pos] = selectedType
+                nodes[pos] = selectedType
+        else:
+            for x in range(startX, endX+1):
+                for y in range(startY, endY+1):
+                    pos = (x, y)
+                    targetType = nodes.get(pos, None)
+                    if pos and targetType != None and targetType != selectedType:
+                        nodes[pos] = selectedType
+                    
+
+        # if size==1:
+        #     drawNodes = {centrePos}
+        # else:
+        #     drawNodes = self.grid.GetNeighbours(centrePos, size - 1)
+        #     drawNodes.add(centrePos)
+        
+        # nodes = self.grid.nodes
+        # for pos in drawNodes:
+        #     targetType = nodes.get(pos, None)
+        #     if pos and targetType != None and targetType != selectedType:
+        #         nodes[pos] = selectedType
 
     def SetGrid(self, width, height):
         self.grid = Grid(width, height)
