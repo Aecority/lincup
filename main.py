@@ -1,7 +1,9 @@
 import pygame
+from typing import List, Tuple
 import rendering
 import input
 import pygame_gui
+from nodes import NodeType
 
 windowDimensions = (1280, 720)
 
@@ -14,8 +16,11 @@ clock = pygame.time.Clock()
 
 # GUI
 guimanager = pygame_gui.UIManager(windowDimensions)
+typeList: List[str | Tuple[str, str]] = [t.name for t in NodeType]
+selectedType: NodeType = NodeType.EMPTY
 
 renderer = rendering.renderer(screen)
+boundSet = False
 
 camSpeed = 0.2
 scrollFactor = 0.05
@@ -45,6 +50,24 @@ heightInput = pygame_gui.elements.UITextEntryLine(
     manager=guimanager
 )
 
+applyBoundsButton = pygame_gui.elements.UIButton(
+    relative_rect=pygame.Rect(10, 120, 200, 30),
+    text="Apply",
+    manager=guimanager
+)
+
+brushHeading = pygame_gui.elements.UILabel(
+    relative_rect=pygame.Rect(10, 170, 200, 30),
+    text='Set Brush',
+    manager=guimanager
+)
+
+nodeTypeDropdown = pygame_gui.elements.UIDropDownMenu(
+    relative_rect=pygame.Rect(10, 200, 200, 30),
+    options_list=typeList,
+    starting_option=typeList[0]
+)
+
 enableGridRendering = pygame_gui.elements.UICheckBox(
     relative_rect=pygame.Rect(10, 420, 30, 30),
     text="Enable Grid Rendering",
@@ -53,8 +76,8 @@ enableGridRendering = pygame_gui.elements.UICheckBox(
 enableGridRendering.set_state(True)
 
 submitButton = pygame_gui.elements.UIButton(
-    relative_rect=pygame.Rect(10, 450, 200, 30),
-    text="Apply",
+    relative_rect=pygame.Rect(10, 460, 200, 30),
+    text="Submit",
     manager=guimanager
 )
 
@@ -75,14 +98,22 @@ while running:
         if event.type == pygame_gui.UI_CHECK_BOX_UNCHECKED:
             if event.ui_element == enableGridRendering:
                 renderer.enableBgRendering = False
+                
+        if event.type == pygame_gui.UI_DROP_DOWN_MENU_CHANGED:
+            selectedType = NodeType(typeList.index(event.text))
                     
         if event.type == pygame_gui.UI_BUTTON_PRESSED:
-            if event.ui_element == submitButton:
-                width, height = int(widthInput.get_text()), int(heightInput.get_text())
+            if event.ui_element == applyBoundsButton:
                 try:
+                    width, height = int(widthInput.get_text()), int(heightInput.get_text())
                     renderer.SetGrid(width, height)
+                    boundSet = True
                 except ValueError:
                     print("Invalid Input")
+    
+    if pygame.mouse.get_pressed()[0]:
+        if boundSet:
+            renderer.Draw(selectedType, 2)
     
     if scrollStatus:
         renderer.ZoomCamera(scrollStatus * scrollFactor * deltaTime)

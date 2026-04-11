@@ -1,5 +1,6 @@
 from enum import Enum
 
+# The type of node
 class NodeType(Enum):
     EMPTY = 0
     DIRT = 1
@@ -11,37 +12,36 @@ class Grid():
         self.width: int = width
         self.height: int = height
         
+        # Initialize grid of empty nodes
         self.nodes: dict[tuple, NodeType] = {
             (x, y): NodeType.EMPTY
             for x in range(width) for y in range(height)
         }
-        
-    def GetNode(self, horizontal, vertical):
-        return self.nodes[vertical * self.width + horizontal]
 
-    def GetNeighbours(self, pos: tuple, step=1):
+    def GetNeighbours(self, pos: tuple, step=1, found=[]):
         if (step < 1):
             raise RuntimeError
         if self.nodes.get(pos, None)==None:
-            return []
+            return set()
         
-        neighbours: list[tuple[int, int]] = [pos]
+        neighbours: set[tuple[int, int]] = set()
         
         x, y = pos
-        potentialNeighbours = [
+        potentialNeighbours = {
                 (x-1, y),
                 (x+1, y),
                 (x, y-1),
                 (x, y+1)
-            ]
-        for n in potentialNeighbours:
-            if self.nodes.get(n, None)==None:
-                potentialNeighbours.remove(n)
+        }
                 
         if step == 1:
-            return potentialNeighbours+neighbours
+            return potentialNeighbours | neighbours
         elif step > 1:
-            neighbours.extend(potentialNeighbours)
+            neighbours.update(potentialNeighbours)
             for n in potentialNeighbours:
-                neighbours.extend(self.GetNeighbours(n, step-1))
+                neighbours.update(self.GetNeighbours(n, step-1, found+[pos]))
+                
+        for n in neighbours.copy():
+            if self.nodes.get(n, None)==None or n==pos:
+                neighbours.remove(n)
         return neighbours

@@ -1,5 +1,5 @@
 import pygame
-import math
+from math import ceil
 from nodes import Grid, NodeType
 
 backgroundColor = pygame.Color("#f4c2c2")
@@ -7,7 +7,7 @@ minZoom, maxZoom = 5, 40
 bgRenderThreshold: int = 10
 
 # Node colors
-emptyNodeCol = pygame.Color("#CFCFCF")
+emptyNodeCol = pygame.Color("#F5F5F5")
 dirtNodeCol = pygame.Color("#724419")
 pavementNodeCol = pygame.Color("#A19E8E")
 roadNodeCol = pygame.Color("#1D1F27")
@@ -18,7 +18,7 @@ class renderer:
         
         self.enableBgRendering: bool = True
         
-        # Camera (do NOT directly change either of these values and use the respective functions instead)
+        # Camera (do NOT directly change either of these values outside this class and use the respective functions instead)
         self.camOffset: pygame.Vector2 = pygame.Vector2(0, 0)
         self.camZoom: float = 30
         
@@ -48,28 +48,48 @@ class renderer:
         
         self.camZoom = zoomLevel
         self.Render()
-    
-    def SetGrid(self, width, height):
-        self.grid = Grid(width, height)
-        self.__gridSet = True
         
     def NodePosFromMouse(self):
         mouseX, mouseY = pygame.mouse.get_pos()
         nodePos = ((mouseX-self.camOffset.x)//self.camZoom), ((mouseY-self.camOffset.y)//self.camZoom)
         return nodePos
     
+    def Draw(self, selectedType: NodeType, size: int):
+        centrePos = self.NodePosFromMouse()
+        if size<1:
+            return ValueError("Invalid brush size")
+        if size==1:
+            targetType = self.grid.nodes.get(centrePos, None)
+            if centrePos and targetType != None and targetType != selectedType:
+                self.grid.nodes[centrePos] = selectedType
+            return
+        drawNodes = self.grid.GetNeighbours(centrePos, size-1) | {centrePos}
+        for pos in drawNodes.copy():
+            targetType = self.grid.nodes.get(pos, None)
+            if pos and targetType != None and targetType != selectedType:
+                self.grid.nodes[pos] = selectedType
+
+    def SetGrid(self, width, height):
+        self.grid = Grid(width, height)
+        self.__gridSet = True
+    
     def __RenderGrid(self):
         # Replace this with only rendering visible tiles later
         sWidth, sHeight = self.screen.get_size()
         
         startX, startY = int(-self.camOffset.x // self.camZoom), int(-self.camOffset.y // self.camZoom)
-        endX, endY = startX+math.ceil(sWidth / self.camZoom)+2, startY+math.ceil(sHeight / self.camZoom)+2
+        endX, endY = startX+ceil(sWidth / self.camZoom)+2, startY+ceil(sHeight / self.camZoom)+2
 
         for x in range(startX, endX):
             for y in range(startY, endY):
                 if (x,y) not in self.grid.nodes:
                     continue
-                rect = pygame.Rect(x*self.camZoom + self.camOffset.x, y*self.camZoom + self.camOffset.y, self.camZoom, self.camZoom)
+            
+                xPos = round(x*self.camZoom + self.camOffset.x)
+                yPos = round(y*self.camZoom + self.camOffset.y)
+                size = ceil(self.camZoom)
+                rect = pygame.Rect(xPos, yPos, size, size)
+                
                 match self.grid.nodes.get((x, y)):
                     case NodeType.EMPTY:
                         nodeCol = emptyNodeCol
@@ -84,8 +104,8 @@ class renderer:
     
     def __RenderBackground(self):
         width, height = self.screen.get_size()
-        horizontalCount = math.ceil(width/self.camZoom)+2
-        verticalCount = math.ceil(height/self.camZoom)+2
+        horizontalCount = ceil(width/self.camZoom)+2
+        verticalCount = ceil(height/self.camZoom)+2
         
         localOffset = pygame.Vector2(
             self.camOffset.x % self.camZoom - self.camZoom,
