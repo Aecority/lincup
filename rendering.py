@@ -1,22 +1,30 @@
 import pygame
 from math import ceil
-from nodes import Grid, NodeType
+from nodes import Grid, TerrainType, StructureType, Structure
 
 backgroundColor = pygame.Color("#f4c2c2")
 minZoom, maxZoom = 5, 40
 bgRenderThreshold: int = 10
 
-# Node colors
+# Node colors -
+ # Terrain
 emptyNodeCol = pygame.Color("#F5F5F5")
 dirtNodeCol = pygame.Color("#724419")
 pavementNodeCol = pygame.Color("#A19E8E")
 roadNodeCol = pygame.Color("#1D1F27")
+ 
+ # Structures
+houseNodeCol = pygame.Color("#FF7300")
+apartmentNodeCol = pygame.Color("#00ff00")
+hospitalNodeCol = pygame.Color("#0000ff")
+schoolNodeCol = pygame.Color("#fff000")
+busNodeCol = pygame.Color("#ff0000")
 
 class renderer:
     def __init__(self, screen: pygame.Surface):
         self.screen = screen
         
-        self.enableBgRendering: bool = True
+        self.enableBgRendering: bool = True # Don't change this directly either
         
         # Camera (do NOT directly change either of these values outside this class and use the respective functions instead)
         self.camOffset: pygame.Vector2 = pygame.Vector2(0, 0)
@@ -26,7 +34,10 @@ class renderer:
         self.__gridSet: bool = False
         
         self.Render()
-        
+    
+    def SetBackgroundVisibility(self, state: bool):
+        self.enableBgRendering = state
+    
     def Render(self):
         self.screen.fill(backgroundColor)
         if self.__gridSet:
@@ -37,7 +48,6 @@ class renderer:
         
     def MoveCamera(self, pos: pygame.Vector2):
         self.camOffset = pos
-        self.Render()
         
     def ZoomCamera(self, dir: float):
         zoomLevel = self.camZoom + dir
@@ -47,19 +57,21 @@ class renderer:
             zoomLevel = minZoom
         
         self.camZoom = zoomLevel
-        self.Render()
         
-    def NodePosFromMouse(self):
-        mouseX, mouseY = pygame.mouse.get_pos()
-        nodePos = int((mouseX-self.camOffset.x)//self.camZoom), int((mouseY-self.camOffset.y)//self.camZoom)
+    def NodePosFromScreen(self, pos: tuple[int, int]):
+        x, y = pos
+        nodePos = int((x-self.camOffset.x)//self.camZoom), int((y-self.camOffset.y)//self.camZoom)
         return nodePos
     
-    def Draw(self, selectedType: NodeType, size: int):
-        mouseX, mouseY = self.NodePosFromMouse()
+    def SetStructure(self, first: tuple[int, int], second: tuple[int, int], structureType: StructureType):
+        self.grid.CreateStructure(first, second, structureType)
+    
+    def Draw(self, selectedType: TerrainType, size: int):
+        mouseX, mouseY = self.NodePosFromScreen(pygame.mouse.get_pos())
         if size<1:
             return ValueError("Invalid brush size")
         
-        nodes = self.grid.nodes
+        terrainNodes = self.grid.terrain
         radius = size-1
         
         startX, endX = mouseX-radius, mouseX+radius
@@ -67,29 +79,16 @@ class renderer:
         
         if radius==0:
             pos = (mouseX, mouseY)
-            targetType = nodes.get(pos, None)
+            targetType = terrainNodes.get(pos, None)
             if pos and targetType != None and targetType != selectedType:
-                nodes[pos] = selectedType
+                terrainNodes[pos] = selectedType
         else:
             for x in range(startX, endX+1):
                 for y in range(startY, endY+1):
                     pos = (x, y)
-                    targetType = nodes.get(pos, None)
+                    targetType = terrainNodes.get(pos, None)
                     if pos and targetType != None and targetType != selectedType:
-                        nodes[pos] = selectedType
-                    
-
-        # if size==1:
-        #     drawNodes = {centrePos}
-        # else:
-        #     drawNodes = self.grid.GetNeighbours(centrePos, size - 1)
-        #     drawNodes.add(centrePos)
-        
-        # nodes = self.grid.nodes
-        # for pos in drawNodes:
-        #     targetType = nodes.get(pos, None)
-        #     if pos and targetType != None and targetType != selectedType:
-        #         nodes[pos] = selectedType
+                        terrainNodes[pos] = selectedType
 
     def SetGrid(self, width, height):
         self.grid = Grid(width, height)
@@ -104,7 +103,7 @@ class renderer:
 
         for x in range(startX, endX):
             for y in range(startY, endY):
-                if (x,y) not in self.grid.nodes:
+                if (x,y) not in self.grid.terrain:
                     continue
             
                 xPos = round(x*self.camZoom + self.camOffset.x)
@@ -112,16 +111,33 @@ class renderer:
                 size = ceil(self.camZoom)
                 rect = pygame.Rect(xPos, yPos, size, size)
                 
-                match self.grid.nodes.get((x, y)):
-                    case NodeType.EMPTY:
-                        nodeCol = emptyNodeCol
-                    case NodeType.DIRT:
-                        nodeCol = dirtNodeCol
-                    case NodeType.PAVEMENT:
-                        nodeCol = pavementNodeCol
-                    case NodeType.ROAD:
-                        nodeCol = roadNodeCol
+                node = self.grid.GetTopNode((x, y))
                 
+                if type(node) == Structure:
+                    stype = node.structureType
+                    match stype:
+                        case StructureType.HOUSE:
+                            nodeCol = houseNodeCol
+                        case StructureType.APARTMENT:
+                            nodeCol = apartmentNodeCol
+                        case StructureType.HOSPITAL:
+                            nodeCol = hospitalNodeCol
+                        case StructureType.SCHOOL:
+                            nodeCol = schoolNodeCol
+                        case StructureType.BUS:
+                            nodeCol = busNodeCol
+                    
+                else:
+                    match node:
+                        case TerrainType.EMPTY:
+                            nodeCol = emptyNodeCol
+                        case TerrainType.DIRT:
+                            nodeCol = dirtNodeCol
+                        case TerrainType.PAVEMENT:
+                            nodeCol = pavementNodeCol
+                        case TerrainType.ROAD:
+                            nodeCol = roadNodeCol
+                    
                 pygame.draw.rect(self.screen, nodeCol, rect)
     
     def __RenderBackground(self):

@@ -3,7 +3,7 @@ from typing import List, Tuple
 import rendering
 import input
 import pygame_gui
-from nodes import NodeType
+from nodes import TerrainType, StructureType
 
 windowDimensions = (1280, 720)
 
@@ -16,9 +16,16 @@ clock = pygame.time.Clock()
 
 # GUI
 guimanager = pygame_gui.UIManager(windowDimensions, "theme.json")
-typeList: List[str | Tuple[str, str]] = [t.name for t in NodeType]
-selectedType: NodeType = NodeType.EMPTY
+terrainList: List[str | Tuple[str, str]] = [t.name for t in TerrainType]
+structureList: List[str | Tuple[str, str]] = [t.name for t in StructureType]
+selectedTerrain: TerrainType = TerrainType.EMPTY
+selectedStructure: StructureType = StructureType.HOUSE
 brushSize: int = 1
+
+structureSelected, terrainSelected = False, False
+# Structure placement
+firstStructurePoint: tuple[int, int] | None = None
+secondStructurePoint: tuple[int, int] | None = None
 
 renderer = rendering.renderer(screen)
 boundSet = False
@@ -37,30 +44,41 @@ panel = pygame_gui.elements.UIPanel(
 boundHeading = pygame_gui.elements.UILabel(
     relative_rect=pygame.Rect(10, 20, 200, 30),
     text='Create Bounds',
+    container=panel,
     manager=guimanager
 )
 
 widthInput = pygame_gui.elements.UITextEntryLine(
     relative_rect=pygame.Rect(10, 50, 200, 30),
     placeholder_text="width...",
+    container=panel,
     manager=guimanager
 )
 
 heightInput = pygame_gui.elements.UITextEntryLine(
     relative_rect=pygame.Rect(10, 90, 200, 30),
     placeholder_text="height...",
+    container=panel,
     manager=guimanager
 )
 
 applyBoundsButton = pygame_gui.elements.UIButton(
     relative_rect=pygame.Rect(10, 120, 200, 30),
     text="Apply",
+    container=panel,
+    manager=guimanager
+)
+
+terrainButton = pygame_gui.elements.UIButton(
+    relative_rect=pygame.Rect(10, 170, 30, 30),
+    text='[  ]',
     manager=guimanager
 )
 
 brushHeading = pygame_gui.elements.UILabel(
-    relative_rect=pygame.Rect(10, 170, 200, 30),
-    text='Set Brush',
+    relative_rect=pygame.Rect(10, 170, 180, 30),
+    text='Brush',
+    container=panel,
     manager=guimanager
 )
 
@@ -68,24 +86,48 @@ brushSizeBar = pygame_gui.elements.UIHorizontalSlider(
     relative_rect=pygame.Rect(10, 200, 160, 30),
     start_value=1,
     value_range=(1, 10),
+    container=panel,
     manager=guimanager
 )
 
 brushSizeDisplay = pygame_gui.elements.UILabel(
     relative_rect=pygame.Rect(170, 200, 35, 30),
     text='1',
+    container=panel,
     manager=guimanager
 )
 
-nodeTypeDropdown = pygame_gui.elements.UIDropDownMenu(
-    relative_rect=pygame.Rect(10, 240, 200, 30),
-    options_list=typeList,
-    starting_option=typeList[0]
+structureButton = pygame_gui.elements.UIButton(
+    relative_rect=pygame.Rect(10, 290, 30, 30),
+    text='[  ]',
+    manager=guimanager
+)
+
+structureHeading = pygame_gui.elements.UILabel(
+    relative_rect=pygame.Rect(10, 290, 180, 30),
+    text='Structures',
+    container=panel,
+    manager=guimanager
+)
+
+terrainTypeDropdown = pygame_gui.elements.UIDropDownMenu(
+    relative_rect=pygame.Rect(10, 240, 180, 30),
+    options_list=terrainList,
+    container=panel,
+    starting_option=terrainList[0]
+)
+
+structureTypeDropdown = pygame_gui.elements.UIDropDownMenu(
+    relative_rect=pygame.Rect(10, 320, 180, 30),
+    options_list=structureList,
+    container=panel,
+    starting_option=structureList[0]
 )
 
 enableGridRendering = pygame_gui.elements.UICheckBox(
     relative_rect=pygame.Rect(10, 420, 30, 30),
     text="Enable Grid Rendering",
+    container=panel,
     manager=guimanager
 )
 enableGridRendering.set_state(True)
@@ -93,6 +135,7 @@ enableGridRendering.set_state(True)
 submitButton = pygame_gui.elements.UIButton(
     relative_rect=pygame.Rect(10, 460, 200, 30),
     text="Submit",
+    container=panel,
     manager=guimanager
 )
 
@@ -107,6 +150,16 @@ while running:
         inputDirection = input.ReadDirection(event)
         scrollStatus = input.ReadScroll(event)
         
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if structureSelected:
+                if event.button == 1 and not guiPanel.collidepoint(pygame.mouse.get_pos()):
+                    pos = renderer.NodePosFromScreen(pygame.mouse.get_pos())
+                    if pos in renderer.grid.terrain:
+                        if not firstStructurePoint:
+                            firstStructurePoint = pos
+                        elif not secondStructurePoint:
+                            secondStructurePoint = pos
+        
         if event.type == pygame_gui.UI_CHECK_BOX_CHECKED:
             if event.ui_element == enableGridRendering:
                 renderer.enableBgRendering = True
@@ -115,7 +168,10 @@ while running:
                 renderer.enableBgRendering = False
                 
         if event.type == pygame_gui.UI_DROP_DOWN_MENU_CHANGED:
-            selectedType = NodeType(typeList.index(event.text))
+            if event.ui_element == terrainTypeDropdown:
+                selectedTerrain = TerrainType(terrainList.index(event.text))
+            if event.ui_element == structureTypeDropdown:
+                selectedStructure = StructureType(structureList.index(event.text)+1)
             
         if event.type == pygame_gui.UI_HORIZONTAL_SLIDER_MOVED:
             if event.ui_element == brushSizeBar:
@@ -135,15 +191,36 @@ while running:
                     boundSet = True
                 except ValueError:
                     print("Invalid Input")
+                    
+            if event.ui_element == terrainButton:
+                structureButton.set_text("[  ]")
+                terrainButton.set_text("[X]")
+                terrainSelected = True
+                structureSelected = False
+                firstStructurePoint = None
+                secondStructurePoint = None
+            if event.ui_element == structureButton:
+                structureButton.set_text("[X]")
+                terrainButton.set_text("[  ]")
+                structureSelected = True
+                terrainSelected = False
     
     if not guiPanel.collidepoint(pygame.mouse.get_pos()):
+        guimanager.set_focus_set(None)
         if pygame.mouse.get_pressed()[0]:
             if boundSet:
-                renderer.Draw(selectedType, brushSize)
+                if terrainSelected:
+                    renderer.Draw(selectedTerrain, brushSize)
+        if firstStructurePoint and secondStructurePoint:
+            renderer.grid.CreateStructure(firstStructurePoint, secondStructurePoint, selectedStructure)
+            firstStructurePoint = None
+            secondStructurePoint = None
         
-        if scrollStatus:
-            renderer.ZoomCamera(scrollStatus * scrollFactor * deltaTime)
-        renderer.MoveCamera(renderer.camOffset + (inputDirection * camSpeed * deltaTime))    
+    if scrollStatus:
+        renderer.ZoomCamera(scrollStatus * scrollFactor * deltaTime)
+    renderer.MoveCamera(renderer.camOffset + (inputDirection * camSpeed * deltaTime))
+    
+    renderer.Render()
     
     guimanager.update(deltaTime/1000)
     guimanager.draw_ui(screen)
