@@ -37,10 +37,13 @@ class Grid():
     def CreateStructure(self, first: tuple[int, int], second: tuple[int, int], structureType: StructureType):
             xStart, xEnd = sorted((first[0], second[0]))
             yStart, yEnd = sorted((first[1], second[1]))
-            
+            updatedValues = {}
             for x in range(xStart, xEnd + 1):
                 for y in range(yStart, yEnd + 1):
-                    self.structures[(x, y)] = Structure(origin=(first), structureType=structureType)
+                    if self.structures.get((x, y), None):
+                        return
+                    updatedValues[(x, y)] = Structure(origin=(first), structureType=structureType)
+            self.structures.update(updatedValues)
     
     def GetTopNode(self, pos: tuple[int, int]):
         if pos in self.structures:

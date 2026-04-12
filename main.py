@@ -3,7 +3,7 @@ from typing import List, Tuple
 import rendering
 import input
 import pygame_gui
-from nodes import TerrainType, StructureType
+from nodes import TerrainType, StructureType, Structure
 
 windowDimensions = (1280, 720)
 
@@ -22,7 +22,7 @@ selectedTerrain: TerrainType = TerrainType.EMPTY
 selectedStructure: StructureType = StructureType.HOUSE
 brushSize: int = 1
 
-structureSelected, terrainSelected = False, False
+structureSelected, terrainSelected, removeStructureSelected = False, False, False
 # Structure placement
 firstStructurePoint: tuple[int, int] | None = None
 secondStructurePoint: tuple[int, int] | None = None
@@ -124,6 +124,20 @@ structureTypeDropdown = pygame_gui.elements.UIDropDownMenu(
     starting_option=structureList[0]
 )
 
+removeStructureButton = pygame_gui.elements.UIButton(
+    relative_rect=pygame.Rect(10, 370, 30, 30),
+    text='[  ]',
+    container=panel,
+    manager=guimanager
+)
+
+removeStructureText = pygame_gui.elements.UILabel(
+    relative_rect=pygame.Rect(40, 370, 140, 30),
+    text='Remove Structure',
+    container=panel,
+    manager=guimanager
+)
+
 enableGridRendering = pygame_gui.elements.UICheckBox(
     relative_rect=pygame.Rect(10, 420, 30, 30),
     text="Enable Grid Rendering",
@@ -151,14 +165,22 @@ while running:
         scrollStatus = input.ReadScroll(event)
         
         if event.type == pygame.MOUSEBUTTONDOWN:
-            if structureSelected:
-                if event.button == 1 and not guiPanel.collidepoint(pygame.mouse.get_pos()):
-                    pos = renderer.NodePosFromScreen(pygame.mouse.get_pos())
+            if event.button == 1 and not guiPanel.collidepoint(pygame.mouse.get_pos()):
+                pos = renderer.NodePosFromScreen(pygame.mouse.get_pos())
+                if structureSelected:
                     if pos in renderer.grid.terrain:
                         if not firstStructurePoint:
                             firstStructurePoint = pos
                         elif not secondStructurePoint:
                             secondStructurePoint = pos
+                            
+                if removeStructureSelected:
+                    node = renderer.grid.GetTopNode(pos)
+                    if type(node) == Structure:
+                        renderer.grid.structures = {
+                            k: v for k, v in renderer.grid.structures.items()
+                            if v.origin != node.origin
+                        }
         
         if event.type == pygame_gui.UI_CHECK_BOX_CHECKED:
             if event.ui_element == enableGridRendering:
@@ -166,12 +188,6 @@ while running:
         if event.type == pygame_gui.UI_CHECK_BOX_UNCHECKED:
             if event.ui_element == enableGridRendering:
                 renderer.enableBgRendering = False
-                
-        if event.type == pygame_gui.UI_DROP_DOWN_MENU_CHANGED:
-            if event.ui_element == terrainTypeDropdown:
-                selectedTerrain = TerrainType(terrainList.index(event.text))
-            if event.ui_element == structureTypeDropdown:
-                selectedStructure = StructureType(structureList.index(event.text)+1)
             
         if event.type == pygame_gui.UI_HORIZONTAL_SLIDER_MOVED:
             if event.ui_element == brushSizeBar:
@@ -195,15 +211,28 @@ while running:
             if event.ui_element == terrainButton:
                 structureButton.set_text("[  ]")
                 terrainButton.set_text("[X]")
+                removeStructureButton.set_text("[  ]")
                 terrainSelected = True
                 structureSelected = False
+                removeStructureSelected = False
                 firstStructurePoint = None
                 secondStructurePoint = None
             if event.ui_element == structureButton:
                 structureButton.set_text("[X]")
                 terrainButton.set_text("[  ]")
+                removeStructureButton.set_text("[  ]")
                 structureSelected = True
                 terrainSelected = False
+                removeStructureSelected = False
+            if event.ui_element == removeStructureButton:
+                structureButton.set_text("[  ]")
+                terrainButton.set_text("[  ]")
+                removeStructureButton.set_text("[X]")
+                structureSelected = False
+                terrainSelected = False
+                removeStructureSelected = True
+                firstStructurePoint = None
+                secondStructurePoint = None
     
     if not guiPanel.collidepoint(pygame.mouse.get_pos()):
         guimanager.set_focus_set(None)
