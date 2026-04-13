@@ -160,9 +160,15 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        
         guimanager.process_events(event)
         inputDirection = input.ReadDirection(event)
         scrollStatus = input.ReadScroll(event)
+        
+        if (event.type == pygame.KEYDOWN):
+            if (event.key == pygame.K_ESCAPE):
+                firstStructurePoint = None
+                secondStructurePoint = None
         
         if event.type == pygame_gui.UI_DROP_DOWN_MENU_CHANGED:
             if event.ui_element == terrainTypeDropdown:
@@ -213,6 +219,11 @@ while running:
                     boundSet = True
                 except ValueError:
                     print("Invalid Input")
+            if event.ui_element == submitButton:
+                if boundSet:
+                    renderer.grid.homepaths.clear()
+                    for homeKey, homeVal in renderer.grid.homes.items():
+                        renderer.grid.homepaths.update({homeKey: renderer.grid.BreadthFirstSearch(homeVal)})
                     
             if event.ui_element == terrainButton:
                 structureButton.set_text("[  ]")
@@ -256,17 +267,23 @@ while running:
                 xSelPos, ySelPos = selX*renderer.camZoom+renderer.camOffset.x, selY*renderer.camZoom+renderer.camOffset.y
                 selWidth, selHeight = (mouseX - selX)*renderer.camZoom, (mouseY - selY)*renderer.camZoom
                 if selWidth<0:
-                    selWidth = -selWidth
+                    selWidth = -selWidth + renderer.camZoom
                     xSelPos -= selWidth
+                    xSelPos += renderer.camZoom
+                else:
+                    selWidth += renderer.camZoom
                 if selHeight<0:
-                    selHeight = -selHeight
+                    selHeight = -selHeight + renderer.camZoom
                     ySelPos -= selHeight
+                    ySelPos += renderer.camZoom
+                else:
+                    selHeight += renderer.camZoom
                     
                 renderer.AddUIElement(lambda: pygame.draw.rect(screen, renderer.GetColFromType(selectedStructure), (xSelPos, ySelPos, selWidth, selHeight), 2))
                 
-    if scrollStatus:
-        renderer.ZoomCamera(scrollStatus * scrollFactor * deltaTime)
-    renderer.MoveCamera(renderer.camOffset + (inputDirection * camSpeed * deltaTime))
+        if scrollStatus:
+            renderer.ZoomCamera(scrollStatus * scrollFactor * deltaTime)
+        renderer.MoveCamera(renderer.camOffset + (inputDirection * camSpeed * deltaTime))
     
     renderer.Render()
     
