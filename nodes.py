@@ -22,13 +22,13 @@ class Structure():
     structureType: StructureType
     
 class Grid():
-    def __init__(self, width, height):
+    def __init__(self, width: int, height: int, terrain: TerrainType):
         self.width: int = width
         self.height: int = height
         
         # Initialize grid of empty nodes
         self.terrain: dict[tuple[int, int], TerrainType] = {
-            (x, y): TerrainType.EMPTY
+            (x, y): terrain
             for x in range(width) for y in range(height)
         }
         

@@ -1,6 +1,7 @@
 import pygame
 from math import ceil
 from nodes import Grid, TerrainType, StructureType, Structure
+from collections.abc import Callable
 
 backgroundColor = pygame.Color("#f4c2c2")
 minZoom, maxZoom = 5, 40
@@ -32,6 +33,7 @@ class renderer:
         
         self.grid: Grid
         self.__gridSet: bool = False
+        self.overlayedUI: list[Callable] = []
         
         self.Render()
     
@@ -45,6 +47,10 @@ class renderer:
         
         if self.camZoom > bgRenderThreshold and self.enableBgRendering:
             self.__RenderBackground()
+        
+        for ui in self.overlayedUI:
+            ui()
+        self.overlayedUI.clear()
         
     def MoveCamera(self, pos: pygame.Vector2):
         self.camOffset = pos
@@ -90,9 +96,12 @@ class renderer:
                     if pos and targetType != None and targetType != selectedType:
                         terrainNodes[pos] = selectedType
 
-    def SetGrid(self, width, height):
-        self.grid = Grid(width, height)
+    def SetGrid(self, width: int, height: int, terrain: TerrainType):
+        self.grid = Grid(width, height, terrain)
         self.__gridSet = True
+    
+    def AddUIElement(self, elem: Callable):
+        self.overlayedUI.append(elem)
     
     def __RenderGrid(self):
         # Replace this with only rendering visible tiles later
@@ -113,9 +122,16 @@ class renderer:
                 
                 node = self.grid.GetTopNode((x, y))
                 
-                if type(node) == Structure:
-                    stype = node.structureType
-                    match stype:
+                if node != None:
+                    nodeCol = self.GetColFromType(node)
+                    
+                pygame.draw.rect(self.screen, nodeCol, rect)
+    
+    def GetColFromType(self, ntype: Structure | TerrainType | StructureType):
+                if type(ntype) == Structure:
+                    ntype = ntype.structureType
+                if type(ntype) == StructureType:
+                    match ntype:
                         case StructureType.HOUSE:
                             nodeCol = houseNodeCol
                         case StructureType.APARTMENT:
@@ -128,7 +144,7 @@ class renderer:
                             nodeCol = busNodeCol
                     
                 else:
-                    match node:
+                    match ntype:
                         case TerrainType.EMPTY:
                             nodeCol = emptyNodeCol
                         case TerrainType.DIRT:
@@ -137,8 +153,7 @@ class renderer:
                             nodeCol = pavementNodeCol
                         case TerrainType.ROAD:
                             nodeCol = roadNodeCol
-                    
-                pygame.draw.rect(self.screen, nodeCol, rect)
+                return nodeCol
     
     def __RenderBackground(self):
         width, height = self.screen.get_size()

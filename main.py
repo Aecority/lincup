@@ -164,17 +164,23 @@ while running:
         inputDirection = input.ReadDirection(event)
         scrollStatus = input.ReadScroll(event)
         
+        if event.type == pygame_gui.UI_DROP_DOWN_MENU_CHANGED:
+            if event.ui_element == terrainTypeDropdown:
+                selectedTerrain = TerrainType[event.text]
+            if event.ui_element == structureTypeDropdown:
+                selectedStructure = StructureType[event.text]
+        
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1 and not guiPanel.collidepoint(pygame.mouse.get_pos()):
                 pos = renderer.NodePosFromScreen(pygame.mouse.get_pos())
-                if structureSelected:
+                if structureSelected and boundSet:
                     if pos in renderer.grid.terrain:
                         if not firstStructurePoint:
                             firstStructurePoint = pos
                         elif not secondStructurePoint:
                             secondStructurePoint = pos
                             
-                if removeStructureSelected:
+                if removeStructureSelected and boundSet:
                     node = renderer.grid.GetTopNode(pos)
                     if type(node) == Structure:
                         renderer.grid.structures = {
@@ -203,7 +209,7 @@ while running:
             if event.ui_element == applyBoundsButton:
                 try:
                     width, height = int(widthInput.get_text()), int(heightInput.get_text())
-                    renderer.SetGrid(width, height)
+                    renderer.SetGrid(width, height, selectedTerrain)
                     boundSet = True
                 except ValueError:
                     print("Invalid Input")
@@ -237,14 +243,27 @@ while running:
     if not guiPanel.collidepoint(pygame.mouse.get_pos()):
         guimanager.set_focus_set(None)
         if pygame.mouse.get_pressed()[0]:
-            if boundSet:
-                if terrainSelected:
+            if boundSet and terrainSelected:
                     renderer.Draw(selectedTerrain, brushSize)
-        if firstStructurePoint and secondStructurePoint:
-            renderer.grid.CreateStructure(firstStructurePoint, secondStructurePoint, selectedStructure)
-            firstStructurePoint = None
-            secondStructurePoint = None
-        
+        if firstStructurePoint:
+            if secondStructurePoint:
+                renderer.grid.CreateStructure(firstStructurePoint, secondStructurePoint, selectedStructure)
+                firstStructurePoint = None
+                secondStructurePoint = None
+            else:
+                mouseX, mouseY = renderer.NodePosFromScreen(pygame.mouse.get_pos())
+                selX, selY = firstStructurePoint
+                xSelPos, ySelPos = selX*renderer.camZoom+renderer.camOffset.x, selY*renderer.camZoom+renderer.camOffset.y
+                selWidth, selHeight = (mouseX - selX)*renderer.camZoom, (mouseY - selY)*renderer.camZoom
+                if selWidth<0:
+                    selWidth = -selWidth
+                    xSelPos -= selWidth
+                if selHeight<0:
+                    selHeight = -selHeight
+                    ySelPos -= selHeight
+                    
+                renderer.AddUIElement(lambda: pygame.draw.rect(screen, renderer.GetColFromType(selectedStructure), (xSelPos, ySelPos, selWidth, selHeight), 2))
+                
     if scrollStatus:
         renderer.ZoomCamera(scrollStatus * scrollFactor * deltaTime)
     renderer.MoveCamera(renderer.camOffset + (inputDirection * camSpeed * deltaTime))
