@@ -135,7 +135,7 @@ class Grid():
                     self.buses[nbo]
                 )
             
-            maxDist = 200
+            maxDist = 100
             directHospital = hd if hd != -1 else maxDist
             busToHospital = (bd + hdb / 2) if (bd != -1 and hdb != -1) else maxDist
             hospitalDist = min(directHospital, busToHospital)
@@ -144,11 +144,13 @@ class Grid():
             busToSchool = (bd + sdb / 2) if (bd != -1 and sdb != -1) else maxDist
             schoolDist = min(directSchool, busToSchool)
 
-            totalDist = hospitalDist + schoolDist
+            busDist = bd if bd != -1 else maxDist
+
+            totalDist = hospitalDist*HOSPITAL_WEIGHT + schoolDist*SCHOOL_WEIGHT + busDist*BUS_WEIGHT
             if totalDist >= maxDist:
                 overallQuality = 0
             else:
-                overallQuality = max(0, (maxDist*2 - totalDist)/(2*maxDist))*100
+                overallQuality = max(0, (maxDist*3 - totalDist)/(3*maxDist))*100
 
             if homeType == StructureType.APARTMENT:
                 overallQuality *= 0.8
