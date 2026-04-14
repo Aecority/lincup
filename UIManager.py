@@ -66,7 +66,7 @@ class UIManager:
         # === Terrain ===
         self.terrainButton = pygame_gui.elements.UIButton(
             pygame.Rect(10, 170, 30, 30),
-            text='[  ]',
+            text='[X]',
             container=self.panel,
             manager=self.manager
         )
