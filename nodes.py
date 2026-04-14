@@ -24,11 +24,15 @@ class Structure():
 
 @dataclass
 class HomeQuality():
-    quality: int
+    quality: float
     nearestHospital: int
     nearestSchool: int
     nearestBus: int
-    
+
+BUS_WEIGHT = 0.3
+HOSPITAL_WEIGHT = 0.5
+SCHOOL_WEIGHT = 0.2
+
 class Grid():
     def __init__(self, width: int, height: int, terrain: TerrainType):
         self.width: int = width
@@ -49,9 +53,9 @@ class Grid():
     def HomeQualityToReadable(self, hq: HomeQuality):
         tooltip: str = "Home Quality\n\n"
         
-        tooltip += f"Nearest Hospital: {hq.nearestHospital}\n"
-        tooltip += f"Nearest Bus: {hq.nearestBus}\n"
-        tooltip += f"Nearest School: {hq.nearestSchool}\n\n"
+        tooltip += f"Nearest Hospital: {hq.nearestHospital}\n" if hq.nearestHospital != -1 else "No accessible hospital\n"
+        tooltip += f"Nearest Bus: {hq.nearestBus}\n" if hq.nearestBus != -1 else "No accessible bus\n"
+        tooltip += f"Nearest School: {hq.nearestSchool}\n\n" if hq.nearestSchool != -1 else "No accessible school\n\n"
         
         tooltip += f"Overall: {hq.quality}"
         
@@ -130,12 +134,23 @@ class Grid():
                 hdb, sdb, _, _ = self.BreadthFirstSearch(
                     self.buses[nbo]
                 )
-                
-            # -- Quality Evaluation --
-            # Write your code here
-            # ------------------------
             
-            homeQuality = HomeQuality(quality=0, nearestHospital=hd, nearestSchool=sd, nearestBus=bd)
+            maxDist = 200
+            directHospital = hd if hd != -1 else maxDist
+            busToHospital = (bd + hdb / 2) if (bd != -1 and hdb != -1) else maxDist
+            hospitalDist = min(directHospital, busToHospital)
+
+            directSchool = sd if sd != -1 else maxDist
+            busToSchool = (bd + sdb / 2) if (bd != -1 and sdb != -1) else maxDist
+            schoolDist = min(directSchool, busToSchool)
+
+            totalDist = hospitalDist + schoolDist
+            if totalDist >= maxDist:
+                overallQuality = 0
+            else:
+                overallQuality = max(0, 100 - totalDist)
+            
+            homeQuality = HomeQuality(quality=overallQuality, nearestHospital=hd, nearestSchool=sd, nearestBus=bd)
             self.lifeQualities[k] = homeQuality
         self.lifeQualitySet = True
     
