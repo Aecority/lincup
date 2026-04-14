@@ -28,8 +28,6 @@ class HomeQuality():
     nearestHospital: int
     nearestSchool: int
     nearestBus: int
-    hospitalDistanceFromBus: int
-    schoolDistanceFromBus: int
     
 class Grid():
     def __init__(self, width: int, height: int, terrain: TerrainType):
@@ -123,6 +121,9 @@ class Grid():
     def InitializeLivingQuality(self):
         for k, v in self.homes.items():
             hd, sd, bd, nbo = self.BreadthFirstSearch(v)
+            node = self.GetTopNode(k)
+            assert isinstance(node, Structure)
+            homeType = node.structureType
             hdb = -1
             sdb = -1
             if nbo != None:
@@ -134,7 +135,7 @@ class Grid():
             # Write your code here
             # ------------------------
             
-            homeQuality = HomeQuality(quality=0, nearestHospital=hd, nearestSchool=sd, nearestBus=bd, hospitalDistanceFromBus=hdb, schoolDistanceFromBus=sdb)
+            homeQuality = HomeQuality(quality=0, nearestHospital=hd, nearestSchool=sd, nearestBus=bd)
             self.lifeQualities[k] = homeQuality
         self.lifeQualitySet = True
     
