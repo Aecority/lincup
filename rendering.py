@@ -3,23 +3,23 @@ from math import ceil
 from nodes import Grid, TerrainType, StructureType, Structure
 from collections.abc import Callable
 
-backgroundColor = pygame.Color("#f4c2c2")
-minZoom, maxZoom = 5, 40
-bgRenderThreshold: int = 10
+BACKGROUND_COLOR = pygame.Color("#f4c2c2")
+MIN_ZOOM, MAX_ZOOM = 5, 40
+BG_RENDER_THRESHOLD: int = 10
 
 # Node colors -
  # Terrain
-emptyNodeCol = pygame.Color("#F5F5F5")
-dirtNodeCol = pygame.Color("#724419")
-pavementNodeCol = pygame.Color("#A19E8E")
-roadNodeCol = pygame.Color("#1D1F27")
+EMPTY_NODE_COL = pygame.Color("#F5F5F5")
+DIRT_NODE_COL = pygame.Color("#724419")
+PAVEMENT_NODE_COL = pygame.Color("#A19E8E")
+ROAD_NODE_COL = pygame.Color("#1D1F27")
  
  # Structures
-houseNodeCol = pygame.Color("#FF7300")
-apartmentNodeCol = pygame.Color("#00ff00")
-hospitalNodeCol = pygame.Color("#0000ff")
-schoolNodeCol = pygame.Color("#fff000")
-busNodeCol = pygame.Color("#ff0000")
+HOUSE_NODE_COL = pygame.Color("#FF7300")
+APARTMENT_NODE_COL = pygame.Color("#00ff00")
+HOSPITAL_NODE_COL = pygame.Color("#0000ff")
+SCHOOL_NODE_COL = pygame.Color("#fff000")
+BUS_NODE_COL = pygame.Color("#ff0000")
 
 class renderer:
     def __init__(self, screen: pygame.Surface):
@@ -31,9 +31,10 @@ class renderer:
         self.camOffset: pygame.Vector2 = pygame.Vector2(0, 0)
         self.camZoom: float = 30
         
-        self.grid: Grid
+        self.__grid: Grid
         self.__gridSet: bool = False
         self.overlayedUI: list[Callable] = []
+        self.font = pygame.font.SysFont(None, 25)
         
         self.Render()
     
@@ -41,11 +42,11 @@ class renderer:
         self.enableBgRendering = state
     
     def Render(self):
-        self.screen.fill(backgroundColor)
+        self.screen.fill(BACKGROUND_COLOR)
         if self.__gridSet:
             self.__RenderGrid()
         
-        if self.camZoom > bgRenderThreshold and self.enableBgRendering:
+        if self.camZoom > BG_RENDER_THRESHOLD and self.enableBgRendering:
             self.__RenderBackground()
         
         for ui in self.overlayedUI:
@@ -57,10 +58,10 @@ class renderer:
         
     def ZoomCamera(self, dir: float):
         zoomLevel = self.camZoom + dir
-        if zoomLevel > maxZoom:
-            zoomLevel = maxZoom
-        elif zoomLevel < minZoom:
-            zoomLevel = minZoom
+        if zoomLevel > MAX_ZOOM:
+            zoomLevel = MAX_ZOOM
+        elif zoomLevel < MIN_ZOOM:
+            zoomLevel = MIN_ZOOM
         
         self.camZoom = zoomLevel
         
@@ -70,14 +71,14 @@ class renderer:
         return nodePos
     
     def SetStructure(self, first: tuple[int, int], second: tuple[int, int], structureType: StructureType):
-        self.grid.CreateStructure(first, second, structureType)
+        self.__grid.CreateStructure(first, second, structureType)
     
     def Draw(self, selectedType: TerrainType, size: int):
         mouseX, mouseY = self.NodePosFromScreen(pygame.mouse.get_pos())
         if size<1:
             return ValueError("Invalid brush size")
         
-        terrainNodes = self.grid.terrain
+        terrainNodes = self.__grid.terrain
         radius = size-1
         
         startX, endX = mouseX-radius, mouseX+radius
@@ -96,8 +97,8 @@ class renderer:
                     if pos and targetType != None and targetType != selectedType:
                         terrainNodes[pos] = selectedType
 
-    def SetGrid(self, width: int, height: int, terrain: TerrainType):
-        self.grid = Grid(width, height, terrain)
+    def SetGrid(self, grid: Grid):
+        self.__grid = grid
         self.__gridSet = True
     
     def AddUIElement(self, elem: Callable):
@@ -112,7 +113,7 @@ class renderer:
 
         for x in range(startX, endX):
             for y in range(startY, endY):
-                if (x,y) not in self.grid.terrain:
+                if (x,y) not in self.__grid.terrain:
                     continue
             
                 xPos = round(x*self.camZoom + self.camOffset.x)
@@ -120,7 +121,7 @@ class renderer:
                 size = ceil(self.camZoom)
                 rect = pygame.Rect(xPos, yPos, size, size)
                 
-                node = self.grid.GetTopNode((x, y))
+                node = self.__grid.GetTopNode((x, y))
                 
                 if node != None:
                     nodeCol = self.GetColFromType(node)
@@ -133,27 +134,55 @@ class renderer:
                 if type(ntype) == StructureType:
                     match ntype:
                         case StructureType.HOUSE:
-                            nodeCol = houseNodeCol
+                            nodeCol = HOUSE_NODE_COL
                         case StructureType.APARTMENT:
-                            nodeCol = apartmentNodeCol
+                            nodeCol = APARTMENT_NODE_COL
                         case StructureType.HOSPITAL:
-                            nodeCol = hospitalNodeCol
+                            nodeCol = HOSPITAL_NODE_COL
                         case StructureType.SCHOOL:
-                            nodeCol = schoolNodeCol
+                            nodeCol = SCHOOL_NODE_COL
                         case StructureType.BUS:
-                            nodeCol = busNodeCol
+                            nodeCol = BUS_NODE_COL
                     
                 else:
                     match ntype:
                         case TerrainType.EMPTY:
-                            nodeCol = emptyNodeCol
+                            nodeCol = EMPTY_NODE_COL
                         case TerrainType.DIRT:
-                            nodeCol = dirtNodeCol
+                            nodeCol = DIRT_NODE_COL
                         case TerrainType.PAVEMENT:
-                            nodeCol = pavementNodeCol
+                            nodeCol = PAVEMENT_NODE_COL
                         case TerrainType.ROAD:
-                            nodeCol = roadNodeCol
+                            nodeCol = ROAD_NODE_COL
                 return nodeCol
+    
+    def ShowTooltip(self, message):
+        mouseX, mouseY = pygame.mouse.get_pos()
+        mouseX -= 2
+        mouseY -= 2
+        
+        def draw_logic():
+            font = self.font 
+            FIXED_WIDTH = 200
+            padding = 5
+            line_spacing = 2
+            
+            final_lines = message.split("\n")
+            rendered_lines = [font.render(line.strip(), True, (255, 255, 255)) for line in final_lines]
+            
+            rawHeight = sum(line.get_height() + line_spacing for line in rendered_lines) - line_spacing
+            totalHeight = rawHeight + (padding * 2)
+            
+            tooltipBg = pygame.Rect(mouseX - FIXED_WIDTH, mouseY - totalHeight, FIXED_WIDTH, totalHeight)
+            pygame.draw.rect(self.screen, (0, 0, 0), tooltipBg)
+            
+            currY = tooltipBg.top + padding
+            for surf in rendered_lines:
+                line_x_offset = (FIXED_WIDTH - surf.get_width()) // 2
+                self.screen.blit(surf, (tooltipBg.left + line_x_offset, currY))
+                currY += surf.get_height() + line_spacing
+
+        self.AddUIElement(draw_logic)
     
     def __RenderBackground(self):
         width, height = self.screen.get_size()

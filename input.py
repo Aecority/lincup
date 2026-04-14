@@ -1,34 +1,23 @@
 import pygame
 
-direction = pygame.Vector2(0, 0)
-def ReadDirection(event):
-    if (event.type == pygame.KEYDOWN):
-        if (event.key == pygame.K_w or event.key == pygame.K_UP):
-            direction.y = 1
-        elif (event.key == pygame.K_s or event.key == pygame.K_DOWN):
-            direction.y = -1
-        if (event.key == pygame.K_a or event.key == pygame.K_LEFT):
-            direction.x = 1
-        elif (event.key == pygame.K_d or event.key == pygame.K_RIGHT):
-            direction.x = -1
-            
-    if (event.type == pygame.KEYUP):
-        if (event.key == pygame.K_w or event.key == pygame.K_UP):
-            direction.y = 0
-        elif (event.key == pygame.K_s or event.key == pygame.K_DOWN):
-            direction.y = 0
-        if (event.key == pygame.K_a or event.key == pygame.K_LEFT):
-            direction.x = 0
-        elif (event.key == pygame.K_d or event.key == pygame.K_RIGHT):
-            direction.x = 0
-    
-    return direction
+class Input:
+    def __init__(self):
+        self.direction = pygame.Vector2(0, 0)
+        self.scroll = 0
 
-def ReadScroll(event):
-    if event.type == pygame.MOUSEWHEEL:
-        if event.y > 0:
-            return 1
-        elif event.y < 0:
-            return -1
-        else:
-            return 0
+    def ReadDirection(self):
+        keys = pygame.key.get_pressed()
+
+        self.direction.x = (keys[pygame.K_a] or keys[pygame.K_LEFT]) - (keys[pygame.K_d] or keys[pygame.K_RIGHT])
+        self.direction.y = (keys[pygame.K_w] or keys[pygame.K_UP]) - (keys[pygame.K_s] or keys[pygame.K_DOWN])
+
+        if self.direction.length() > 0:
+            self.direction = self.direction.normalize()
+
+        return self.direction
+
+    def ReadScroll(self, event):
+        if event.type == pygame.MOUSEWHEEL:
+            self.scroll = event.y
+            return self.scroll
+        return None
