@@ -96,6 +96,7 @@ class renderer:
                     targetType = terrainNodes.get(pos, None)
                     if pos and targetType != None and targetType != selectedType:
                         terrainNodes[pos] = selectedType
+        self.__grid.lifeQualitySet = False
 
     def SetGrid(self, grid: Grid):
         self.__grid = grid

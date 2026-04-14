@@ -55,6 +55,11 @@ class App:
             if scroll is not None:
                 self.scrollStatus = scroll
                 
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    self.firstStructurePoint = None
+                    self.secondStructurePoint = None
+
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
                     mousePos = pygame.mouse.get_pos()
@@ -86,6 +91,7 @@ class App:
                                     k: v for k, v in self.primaryGrid.structures.items()
                                     if v.origin != node.origin
                                 }
+                                self.primaryGrid.lifeQualitySet = False
                                 
             if event.type == pygame_gui.UI_HORIZONTAL_SLIDER_MOVED:
                 if event.ui_element == self.ui.brushSizeBar:
@@ -210,6 +216,21 @@ class App:
                             2
                         )
                     )
+                    
+                if self.boundSet and self.primaryGrid.lifeQualitySet:
+                    x, y = self.renderer.NodePosFromScreen(mousePos)
+                    if ((x, y) in self.primaryGrid.terrain):
+                        topNode = self.primaryGrid.GetTopNode((x, y))
+                        if isinstance(topNode, Structure):
+                            if topNode.structureType in (StructureType.HOUSE, StructureType.APARTMENT):
+                                for origin in self.primaryGrid.homes.keys():
+                                    origin = topNode.origin
+                                    quality = self.primaryGrid.lifeQualities.get(origin)
+
+                                    if quality:
+                                        self.renderer.ShowTooltip(
+                                            self.primaryGrid.HomeQualityToString(quality)
+                                        )
             
             self.Render()
 
