@@ -87,11 +87,7 @@ class App:
                             node = self.primaryGrid.GetTopNode(pos)
 
                             if isinstance(node, Structure):
-                                self.primaryGrid.structures = {
-                                    k: v for k, v in self.primaryGrid.structures.items()
-                                    if v.origin != node.origin
-                                }
-                                self.primaryGrid.lifeQualitySet = False
+                                self.primaryGrid.RemoveStructure(node.origin)
                                 
             if event.type == pygame_gui.UI_HORIZONTAL_SLIDER_MOVED:
                 if event.ui_element == self.ui.brushSizeBar:
@@ -229,7 +225,7 @@ class App:
 
                                     if quality:
                                         self.renderer.ShowTooltip(
-                                            self.primaryGrid.HomeQualityToString(quality)
+                                            self.primaryGrid.HomeQualityToReadable(quality)
                                         )
             
             self.Render()

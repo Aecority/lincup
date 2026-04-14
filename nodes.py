@@ -26,8 +26,10 @@ class Structure():
 class HomeQuality():
     quality: int
     nearestHospital: int
-    nearestBus: int
     nearestSchool: int
+    nearestBus: int
+    hospitalDistanceFromBus: int
+    schoolDistanceFromBus: int
     
 class Grid():
     def __init__(self, width: int, height: int, terrain: TerrainType):
@@ -41,16 +43,20 @@ class Grid():
         }
         self.structures: dict[tuple[int, int], Structure] = {}
         self.homes: dict[tuple[int, int], set[tuple[int, int]]] = {}
+        self.buses: dict[tuple[int, int], set[tuple[int, int]]] = {}
         
         self.lifeQualitySet: bool = False
         self.lifeQualities: dict[tuple[int, int], HomeQuality] = {}
 
-    def HomeQualityToString(self, hq: HomeQuality):
-        tooltip: str = "Home Quality\n"
-        tooltip += f"Overall: {hq.quality}\n"
+    def HomeQualityToReadable(self, hq: HomeQuality):
+        tooltip: str = "Home Quality\n\n"
+        
         tooltip += f"Nearest Hospital: {hq.nearestHospital}\n"
         tooltip += f"Nearest Bus: {hq.nearestBus}\n"
-        tooltip += f"Nearest School: {hq.nearestSchool}"
+        tooltip += f"Nearest School: {hq.nearestSchool}\n\n"
+        
+        tooltip += f"Overall: {hq.quality}"
+        
         return tooltip
     
     def CreateStructure(self, first: tuple[int, int], second: tuple[int, int], structureType: StructureType):
@@ -64,17 +70,48 @@ class Grid():
                         
             isHouse = structureType in (StructureType.HOUSE, StructureType.APARTMENT)
             houseEdges = set()
+            
+            isBus = structureType == StructureType.BUS
+            busEdges = set()
+            
             updatedValues = {}
             
             for x in range(xStart, xEnd + 1):
                 for y in range(yStart, yEnd + 1):
-                    if isHouse and (x in (xStart, xEnd) or y in (yStart, yEnd)):
+                    isBoundary = (x in (xStart, xEnd) or y in (yStart, yEnd))
+                    if isHouse and isBoundary:
                         houseEdges.add((x, y))
+                    if isBus and isBoundary:
+                        busEdges.add((x, y))
                     updatedValues[(x, y)] = Structure(origin=(xStart, yStart), structureType=structureType)
             self.structures.update(updatedValues)
             if isHouse:
                 self.homes[(xStart, yStart)] = houseEdges
+            if isBus:
+                self.buses[(xStart, yStart)] = busEdges
             self.lifeQualitySet = False
+    
+    def RemoveStructure(self, pos: tuple[int, int]):
+        node = self.structures.get(pos)
+
+        if not node:
+            return
+
+        origin = node.origin
+        stype = node.structureType
+
+        self.structures = {
+            k: v for k, v in self.structures.items()
+            if v.origin != origin
+        }
+
+        if stype in (StructureType.HOUSE, StructureType.APARTMENT):
+            self.homes.pop(origin, None)
+
+        if stype is StructureType.BUS:
+            self.buses.pop(origin, None)
+
+        self.lifeQualitySet = False
     
     def GetTopNode(self, pos: tuple[int, int]):
         if pos in self.structures:
@@ -85,18 +122,21 @@ class Grid():
     
     def InitializeLivingQuality(self):
         for k, v in self.homes.items():
-            hd, bd, sd = self.BreadthFirstSearch(v)
-            homeQuality = HomeQuality(quality=0, nearestHospital=hd, nearestBus=bd, nearestSchool=sd)
+            hd, sd, bd, nbo = self.BreadthFirstSearch(v)
+            hdb = -1
+            sdb = -1
+            if nbo != None:
+                hdb, sdb, _, _ = self.BreadthFirstSearch(
+                    self.buses[nbo]
+                )
+                
+            # -- Quality Evaluation --
+            # Write your code here
+            # ------------------------
+            
+            homeQuality = HomeQuality(quality=0, nearestHospital=hd, nearestSchool=sd, nearestBus=bd, hospitalDistanceFromBus=hdb, schoolDistanceFromBus=sdb)
             self.lifeQualities[k] = homeQuality
         self.lifeQualitySet = True
-    
-    def OriginDistance(self, start: tuple[int, int], map: dict[tuple[int, int], tuple[int, int] | None]):
-        current = start
-        distance = 0
-        while(current != None):
-            current = map[current]
-            distance += 1
-        return distance
     
     def BreadthFirstSearch(self, pos: set[tuple[int, int]]):
         frontier = deque(pos)
@@ -108,32 +148,36 @@ class Grid():
         busDistance = -1
         schoolDistance = -1
         
+        nearestBusOrigin: tuple[int, int] | None = None
+        
         while frontier:
             current = frontier.popleft()
             for neighbour in self.__Neighbours(current):
                 nextNode = self.GetTopNode(neighbour)
-                nextNode = nextNode.structureType if isinstance(nextNode, Structure) else nextNode
-                
-                if neighbour not in visited and nextNode in (TerrainType.PAVEMENT, TerrainType.ROAD):
-                    frontier.append(neighbour)
-                    distance[neighbour] = distance[current] + 1
-                    visited.add(neighbour)
                 
                 if neighbour not in visited:
-                    match nextNode:
-                        case StructureType.HOSPITAL:
-                            if hospitalDistance == -1:
-                                hospitalDistance = distance[current] + 1
-                        case StructureType.BUS:
-                            if busDistance == -1 :
-                                busDistance = distance[current] + 1
-                        case StructureType.SCHOOL:
-                            if schoolDistance == -1 :
-                                schoolDistance = distance[current] + 1
-                
-                if hospitalDistance != -1 and busDistance != -1 and schoolDistance != -1: return hospitalDistance, busDistance, schoolDistance
+                    if nextNode in (TerrainType.PAVEMENT, TerrainType.ROAD):
+                        frontier.append(neighbour)
+                        distance[neighbour] = distance[current] + 1
+                        visited.add(neighbour)
                     
-        return hospitalDistance, busDistance, schoolDistance
+                    if isinstance(nextNode, Structure):
+                        match nextNode.structureType:
+                            case StructureType.HOSPITAL:
+                                if hospitalDistance == -1:
+                                    hospitalDistance = distance[current]
+                            case StructureType.BUS:
+                                if busDistance == -1 :
+                                    nearestBusOrigin = nextNode.origin
+                                    busDistance = distance[current]
+                            case StructureType.SCHOOL:
+                                if schoolDistance == -1 :
+                                    schoolDistance = distance[current]
+                
+                if hospitalDistance != -1 and busDistance != -1 and schoolDistance != -1:
+                    return hospitalDistance, schoolDistance, busDistance, nearestBusOrigin
+                    
+        return hospitalDistance, schoolDistance, busDistance, nearestBusOrigin
     
     def __Neighbours(self, node: tuple[int, int]):
         x, y = node
