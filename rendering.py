@@ -106,7 +106,6 @@ class renderer:
         self.overlayedUI.append(elem)
     
     def __RenderGrid(self):
-        # Replace this with only rendering visible tiles later
         sWidth, sHeight = self.screen.get_size()
         
         startX, startY = int(-self.camOffset.x // self.camZoom), int(-self.camOffset.y // self.camZoom)
