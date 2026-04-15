@@ -5,6 +5,9 @@
 - 2: Sejal Mudkhedkar
 - 15: Mrunmayee Katruwar
 
+## Why?
+Although urban planning software already exist, the evaluation of the final plans is still a largely manual process. Linc Up aims to be a tool to aid in this step, so a plan can be brought to reality much quicker.
+
 ## Setup
 - Ensure you have python installed.
 - From the directory you want the app to be run from, run `git clone git@github.com:Aecority/lincup.git`
