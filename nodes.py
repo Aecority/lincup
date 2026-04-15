@@ -177,7 +177,7 @@ class Grid():
                 nextNode = self.GetTopNode(neighbour)
                 
                 if neighbour not in visited:
-                    if nextNode in (TerrainType.PAVEMENT, TerrainType.ROAD) or nextNode.structureType == StructureType.BUS:
+                    if nextNode in (TerrainType.PAVEMENT, TerrainType.ROAD) or (isinstance(nextNode, Structure) and nextNode.structureType == StructureType.BUS):
                         frontier.append(neighbour)
                         distance[neighbour] = distance[current] + 1
                         visited.add(neighbour)
