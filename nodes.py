@@ -153,7 +153,7 @@ class Grid():
                 overallQuality = max(0, (maxDist*3 - totalDist)/(3*maxDist))*100
 
             if homeType == StructureType.APARTMENT:
-                overallQuality *= 0.8
+                overallQuality *= 0.9
             overallQuality = int(overallQuality*100)/100
             homeQuality = HomeQuality(quality=overallQuality, nearestHospital=hd, nearestSchool=sd, nearestBus=bd)
             self.lifeQualities[k] = homeQuality
