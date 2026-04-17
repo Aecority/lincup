@@ -12,7 +12,6 @@ class UIManager:
             manager=self.manager
         )
 
-        # === HEADINGS ===
         self.boundHeading = pygame_gui.elements.UILabel(
             pygame.Rect(10, 20, 200, 30),
             text="Create Bounds",
@@ -41,7 +40,6 @@ class UIManager:
             manager=self.manager
         )
 
-        # === Bounds ===
         self.widthInput = pygame_gui.elements.UITextEntryLine(
             pygame.Rect(10, 50, 200, 30),
             placeholder_text="width...",
@@ -63,7 +61,6 @@ class UIManager:
             manager=self.manager
         )
 
-        # === Terrain ===
         self.terrainButton = pygame_gui.elements.UIButton(
             pygame.Rect(10, 170, 30, 30),
             text='[X]',
@@ -94,7 +91,6 @@ class UIManager:
             manager=self.manager
         )
 
-        # === Structures ===
         self.structureButton = pygame_gui.elements.UIButton(
             pygame.Rect(10, 290, 30, 30),
             text='[  ]',
@@ -117,7 +113,6 @@ class UIManager:
             manager=self.manager
         )
 
-        # === Misc ===
         self.enableGridRendering = pygame_gui.elements.UICheckBox(
             pygame.Rect(10, 420, 30, 30),
             text="Enable Grid Rendering",
